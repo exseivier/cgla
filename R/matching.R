@@ -1,10 +1,29 @@
-# LIBRARIES
 
+#############
+# LIBRARIES #
+#############
 
-# OBJECTS
+# // NO LIBRARIES
+# // LIBRARIES ARE LOADED FROM extract.R
 
-# HELPERS
+###########
+# OBJECTS #
+###########
 
+# // NO OBJECTS
+
+###########
+# HELPERS #
+###########
+
+# /* 
+#  * Finds kmer matches on sequences. It returns a table (matrix) with
+#  * the number of matches per kilobase, the p-value based on poisson
+#  * distribution, the negative log10 of p-value, and the FDR for each
+#  * p-value (p.adjust using BH method).
+#  * This function requires two DNAStringSet objects (kmers and Sequences)
+#  * and a integer (mismatch).
+#  */
 findMatches <- function(kmers, sequences, mismatch) {
 	if (class(kmers) != "DNAStringSet" | class(sequences) != "DNAStringSet") {
 		stop("ERROR!: kmers or sequences objects are/is corrupted!")
@@ -38,6 +57,15 @@ findMatches <- function(kmers, sequences, mismatch) {
 	results
 }
 
+# /*
+#  * Harvets the negative log10 of pvalues for each kmer and for each set of sequences
+#  * and returns a matrix with the gene names in rownames and the names of the yeast
+#  * species as column names.
+#  * It requires a list object with the matches (produced by findMatches function), and
+#  * orthologous relational table (data.frame) with the name of the genes an their orthologues
+#  * and a positions_table (matrix) with the name of the names(matches) in rownames pointing out
+#  * the column positions of the orthologues gene names for this particular species.
+#  */
 matches2heatmap <- function(matches, orthoDB, position_table) {
 	if(class(matches) != "list" | class(orthoDB) != "data.frame" | class(position_table) != "matrix") {
 		stop("Input data tables are corrupted")
@@ -71,11 +99,18 @@ matches2heatmap <- function(matches, orthoDB, position_table) {
 	pvalues_table
 }
 
-# METHODS
+###########
+# METHODS #
+###########
 
+# /*
+#  *
+#  */
 setGeneric("match.kmers", function(kmers, sequences) standarGeneric("match.kmers"))
 setMethod("match.kmers", signature("DNAStringSet", "DNAStringSet"),
 	function(kmers, sequences) {
 	matches.table <- findMatches(kmers, sequences)
-
+	# // TODO: To make a wraper to find kmer matches for those functions
 })
+
+

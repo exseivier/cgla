@@ -1,5 +1,26 @@
-# HELPER
 
+#############
+# LIBRARIES #
+#############
+
+# // NO LIBRARIES
+# // LIBRARIES LOADED FROM extract.R
+
+###########
+# OBJECTS #
+###########
+
+# // NO OBJECTS
+
+###########
+# HELPERS #
+###########
+
+# /* 
+#  * Takes the *.tab files of annotations from YGOB database
+#  * www.ygob.ucd.ie/ygob/data/v7-Aug2012
+#  * and returns a gff formated file
+#  */
 ygobTab2gff <- function(ygobTab_file, faFile) {
 	table <- read.delim(ygobTab_file, header=FALSE, as.is=TRUE, sep="\t", quote="")
 	strand <- ifelse(table$V2 == 1, "+", "-")
@@ -15,3 +36,9 @@ ygobTab2gff <- function(ygobTab_file, faFile) {
 	write.table(result, file=out, col.names=FALSE, row.names=FALSE, sep="\t", quote=FALSE)
 	print("Data was stored in gff format")
 }
+
+###########
+# METHODS #
+###########
+
+# // NO METHODS

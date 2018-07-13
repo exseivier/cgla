@@ -1,15 +1,34 @@
-# LIBRARIES
+#############
+# LIBRARIES #
+#############
 
-# OBJECTS
+# // NO LIBRARIES NEEDED.
+# // LIBRARIES ARE LOADED IN extract.R
 
+###########
+# OBJECTS #
+###########
 
-# HELPERS
+# // NO OBJECTS
 
+###########
+# HELPERS #
+###########
+
+# /*
+#  * Writes a bounch of sequences stored in DNAStringSet
+#  * allocated in a list object.
+#  * This function requires a DNAStringSetList: a list of
+#  * DNAStringSet objects, and a character vector with the
+#  * name of the output path.
+#  * The names of the output files will be taken from the
+#  * DNAStringSetList names.
+#  */
 write.DNAStringSetList <- function(path=NULL, dssl) {
+	if (is.null(path)) {
+	    path <- "."
+	}
 	for (name in names(dssl)){
-		if (is.null(path)) {
-			path <- "."
-		}
 		output <- strsplit(name, "/")[[1]]
 		output <- output[length(output)]
 		output <- strsplit(output, "\\.")[[1]]
@@ -20,4 +39,9 @@ write.DNAStringSetList <- function(path=NULL, dssl) {
 		writeXStringSet(dssl[[name]], output, format="fasta")
 	}
 }
-# METHODS
+
+###########
+# METHODS #
+###########
+
+# // NO METHODS

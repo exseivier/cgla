@@ -1,20 +1,36 @@
 # /* 
-#    This methods container are a collection of functions intended
+#    This methods container is a collection of functions intended
 #    to extract feature elements defined in an annotation file
 # */ 
 
+#############
+# LIBRARIES #
+#############
 
-# LIBRARIES
 library(Biostrings)
 library(GenomicRanges)
 library(rtracklayer)
 library(Rsamtools)
 library(BSgenome)
 
-# OBJECTS
+###########
+# OBJECTS #
+###########
 
-# HELPERS
+# // NO OBJECTS
 
+###########
+# HELPERS #
+###########
+
+# /* 
+#  * Using a gff file, it calculates the intergenic coordinates
+#  * and returns a gff file with those corrdinates.
+#  * It requires a gff file and a fasta file (character vectors)
+#  * also it requires a integer vector with the maximum size of
+#  * the intergenic region to return.
+#  * This function returns a GenomicRanges object
+#  */
 get_intergenic_coordinates <- function(gff_file, FaFile, max_size) {
 	gff <- import.gff(gff_file)
 	gff.mRNA <- gff[gff$type == "mRNA"]
@@ -34,6 +50,12 @@ get_intergenic_coordinates <- function(gff_file, FaFile, max_size) {
 	gff.dif
 }
 
+# /* 
+#  * Returns a DNAStringSet object with the intergenic regions specified
+#  * in a GenomicRanges object (granges). Sequences are extracted from
+#  * a DNAStringSet (BSgenome). You could select only a set of genes
+#  * to download only this set of genes setting (geneSet).
+#  */
 get_intergenic_sequences <- function(granges, BSgenome, geneSet){
 	if (! class(granges) == "GRanges"){
 		stop("ERROR!: GRanges object is corrupted!")
@@ -51,6 +73,12 @@ get_intergenic_sequences <- function(granges, BSgenome, geneSet){
 	interSeqs
 }
 
+# /* 
+#  * Returns a relational list object with the names of the
+#  * DNAStringSetList object (dssl) and the column positions where
+#  * the orthologues names are in orthologues database table
+#  * (orthoDB)
+#  */
 get_positions_table <- function(dssl, orthoDB) {
 	positions <- list()
 	for(name in names(dssl)){
@@ -68,6 +96,11 @@ get_positions_table <- function(dssl, orthoDB) {
 	positions
 }
 
+# /* 
+#  * Using the orthologues database table (orthoDB), this function returns
+#  * a DNAStringSetList only with the sequences of the orthologues genes
+#  * defined in the orthoogues table (orthoDB).
+#  */
 get_orthogenes_from_DNAStringSetList <- function(dssl, orthoDB) {
 	if(class(dssl) != "list" | class(orthoDB) != "data.frame") {
 		stop("Input data tables are corrupted")
@@ -81,6 +114,14 @@ get_orthogenes_from_DNAStringSetList <- function(dssl, orthoDB) {
 	dssl
 }
 
+# /* 
+#  * Takes the directories of the path where the AME output is and load every
+#  * ame.tsv file for every analyes performed. AME is a motif enrichment analysis
+#  * software which belongs to the MEME suite package.
+#  * This function takes a character vector (path) with the path where AME result
+#  * directories are and for every directory takes the ame.tsv file and load the
+#  * table in a data.frame object.
+#  */
 load.ame_out <- function(path) {
 	ame_out <- list()
 	dirs <- list.dirs(path, full.names=FALSE)[list.dirs(path, full.names=FALSE) != ""]
@@ -94,8 +135,19 @@ load.ame_out <- function(path) {
 	ame_out
 }
 
-# METHODS
+###########
+# METHODS #
+###########
 
+# /* 
+#  * This method wraps the get_intergenic_coordinates, get_intergenic_sequences
+#  * in order to obtain the intergenic sequences in a DNAStringSet object
+#  * or the intergenic regions coordinates in a GenomicRanges object.
+#  * This function rquires a gff file, a fasta file, a maximum intergenic size,
+#  * and a character vector with the names of the genes you want to select (geneSet).
+#  * retSeq is a logic argument: if it is set to TRUE, this function returns the sequences.
+#  * If it is turned FALSE, it returns only the intergenic coordinates in a GenomicRanges object.
+#  */
 setGeneric("get_intergenic_regions", function(gff_file, FaFile, max_size, geneSet=NULL, retSeq=TRUE) standarGeneric("get_intergenic_regions"))
 setMethod("get_intergenic_regions", signature("character", "character", "integer"),
 	function(gff_file, FaFile, max_size, geneSet=NULL, retSeq=TRUE) {
