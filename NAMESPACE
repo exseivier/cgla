@@ -1,0 +1,10 @@
+exportPattern("^[:alnum:]*")
+exportMethods(
+"get_intergenic_regions"
+)
+export(
+"ygobTab2gff",
+"findMatches",
+"matches2heatmap",
+"write.DNAStringSetList"
+)

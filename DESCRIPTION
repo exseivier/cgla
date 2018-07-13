@@ -1,0 +1,11 @@
+Package: cgla
+Title: Motif enrichment analysis with a phylogenetic focus in yeast
+Version: 0.1
+Authors@R: person("Javier", "Montalvo-Arredondo", email="javier.montalvo@cinvestav.mx", role=c("aut", "cre"))
+Maintainer: Javier Montalvo-Arredondo <javier.montalvo@cinvestav.mx>
+Description: This package contains all the tools needed to replicate the motif enrichment analysis in yeast with a phylogenetic focus.
+Depends: R (>= 3.2.2), Biostrings (>= 2.38.4), rtracklayer (>= 1.30.4), Rsamtools (>= 1.22.0), BSgenome (>= 1.38.0), GenomicRanges (>= 1.22.4)
+Imports: Biostrings (>= 2.38.4), rtracklayer (>= 1.30.4), Rsamtools (>= 1.22.0), BSgenome (>= 1.38.0), GenomicRanges (>= 1.22.4)
+License: GPL (>= 3)
+URL: https://github.com/exseivier/cgla
+LazyData: true
