@@ -9,8 +9,13 @@ library(Biostrings)
 # OBJECTS #
 ###########
 
+# /* S4 object to store data from tab annotation file */
 setClass("pocket", representation(chrname="character", name="character", start="numeric", end="numeric", strand="character"))
-setClass("pocketOfSeq", representation(chrname="character", name="character", seq="DNAStringSet"))
+
+# /* S4 objet used to store the sequence and its coordinates, and name and chromosome name */
+setClass("pocketOfSeq", representation(chrname="character", name="character", seq="DNAStringSet", coords="numeric", strand="character"))
+
+# /* S4 object used as list of pocket or pocketOfSeq objects */
 setClass("listOfPockets", representation(list="list"), validity = function(object){
 	if(length(object@list) > 3){
 		stop("listOfPockets is higher than 3")
@@ -30,6 +35,11 @@ NEW.POCKET <- function(chrname, name, start, end, strand){
 # HELPERS #
 ###########
 
+# /*
+#  * Returns a line from a file connection and stores in a pocket S4 object
+#  * the gene name, chromosome name start and end coordinates as well as the
+#  * strand orientation. This function is implemented in Reload.
+#  */
 getNextLine <- function(con){
 	line <- readLines(con, n=1)
 	obj <- "NA"
@@ -44,6 +54,11 @@ getNextLine <- function(con){
 	obj
 }
 
+# /* 
+#  * Reloads the list of pockets of coordinates data with a new line.
+#  * The data stored in c is passed to b, and data from b is passed to a
+#  * and a new line of coordinates data is stored at c.
+#  */
 Reload <- function(listOfPockets=NULL, con){
 	lop <- listOfPockets
 	if (is.null(lop)) {
@@ -66,6 +81,33 @@ Reload <- function(listOfPockets=NULL, con){
 	}
 }
 
+
+getGFF <- function(lopos) {
+	gff <- c()
+	for (name in names(lopos@list)) {
+		entry <- lopos@list[[name]]
+		comments <- paste("Name=", entry@name, sep="")
+		gff <- rbind(gff, c(entry@chrname, ".", "Promoter", entry@coords[1], entry@coords[2], ".", entry@strand, ".", comments))
+	}
+	gff
+}
+
+write.gff <- function(lopos, file) {
+	print("Formatting data.")
+	gff <- getGFF(lopos)
+	print("Writing gff object to file.")
+	write.table(gff, file, quote=FALSE, row.names=FALSE, col.names=FALSE, sep="\t")
+	print("Finished!")
+}
+
+write.fasta <- function(lopos, file) {
+	print("Collapsing lits of pockets of sequences object.")
+	lopos <- collapse.lopos(lopos)
+	print("Writing DNAStringSet object to file in fasta format.")
+	writeXStringSet(lopos, filepath=file, format="fasta")
+	print("Finished!")
+}
+
 collapse.lopos <- function(lop) {
 	if(class(lop@list[[1]]) != "pocketOfSeq"){
 		stop("lop object does not contain pocketOfSeq")
@@ -84,6 +126,9 @@ collapse.lopos <- function(lop) {
 	sequences
 }
 
+# /*
+#  * Could this script be more efficient
+#  */
 getPromSeqs <- function(lop, sequences, max_size, begin=FALSE) {
 	los <- new("listOfPockets", list=list())
 	b.strand <- lop@list[["b"]]@strand
@@ -95,6 +140,10 @@ getPromSeqs <- function(lop, sequences, max_size, begin=FALSE) {
 	chr.start <- 1
 	chr.end <- width(sequences[names(sequences) %in% b.chrname])
 
+	if (b.start <= 0 | b.end <= 0 | c.start <= 0) {
+		return(NULL)
+	}
+
 	if (b.start > chr.end) {
 		return(NULL)
 	}
@@ -105,22 +154,28 @@ getPromSeqs <- function(lop, sequences, max_size, begin=FALSE) {
 	if (begin) {
 		if (b.strand == "+"){
 			if (b.start - chr.start > max_size) {
-				pos <- new("pocketOfSeq", chrname = b.chrname, name = b.name, seq = subseq(sequences[names(sequences) %in% b.chrname], b.start - max_size, b.start-1))
+				pos <- new("pocketOfSeq", chrname = b.chrname, name = b.name, seq = subseq(sequences[names(sequences) %in% b.chrname], b.start - max_size, b.start-1), coords = c(b.start - max_size, b.start-1), strand = "+")
 				return(pos)
 			}
 			else {
-				pos <- new("pocketOfSeq", chrname = b.chrname, name = b.name, seq = subseq(sequences[names(sequences) %in% b.chrname], chr.start, b.start))
+				pos <- new("pocketOfSeq", chrname = b.chrname, name = b.name, seq = subseq(sequences[names(sequences) %in% b.chrname], chr.start, b.start-1), coords = c(chr.start, b.start-1), strand = "+")
 				return(pos)
 			}
 		}
 		# IF b.strand != "-"
 		else {
 			if (c.start - b.end > max_size | c.start - b.end < 0) {
-				pos <- new("pocketOfSeq", chrname = b.chrname, name = b.name, seq = reverseComplement(subseq(sequences[names(sequences) %in% b.chrname], b.end, b.end + max_size)))
-				return(pos)
+				if (b.end +  max_size <= chr.end) {
+					pos <- new("pocketOfSeq", chrname = b.chrname, name = b.name, seq = reverseComplement(subseq(sequences[names(sequences) %in% b.chrname], b.end, b.end + max_size)), coords = c(b.end, b.end + max_size), strand = "-")
+					return(pos)
+				}
+				else {
+					pos <- new("pocketOfSeq", chrname = b.chrname, name = b.name, seq = reverseComplement(subseq(sequences[names(sequences) %in% b.chrname], b.end+1, chr.end)), coords = c(b.end+1, chr.end), strand = "-")
+					return(pos)
+				}
 			}
 			else {
-				pos <- new("pocketOfSeq", chrname = b.chrname, name = b.name, seq = reverseComplement(subseq(sequences[names(sequences) %in% b.chrname], b.end, c.start)))
+				pos <- new("pocketOfSeq", chrname = b.chrname, name = b.name, seq = reverseComplement(subseq(sequences[names(sequences) %in% b.chrname], b.end, c.start)), coords = c(b.end, c.start), strand = "-")
 				return(pos)
 			}
 		}
@@ -129,49 +184,44 @@ getPromSeqs <- function(lop, sequences, max_size, begin=FALSE) {
 	# IF BEGIN = FALSE
 	else {
 		a.end <- lop@list[["a"]]@end
+		if (b.start <= 0 | b.end <= 0 | c.start <= 0 | a.end <= 0) {
+			return(NULL)
+		}
 		if (b.strand == "+"){
-#			print(a.end)
-#			print(b.start)
-#			print(b.start-max_size)
 			if (b.start - a.end > max_size | b.start - a.end < 0) {
 				if (b.start - max_size > 0) {
-					pos <- new("pocketOfSeq", chrname = b.chrname, name = b.name, seq = subseq(sequences[names(sequences) %in% b.chrname], b.start - max_size, b.start))
+					pos <- new("pocketOfSeq", chrname = b.chrname, name = b.name, seq = subseq(sequences[names(sequences) %in% b.chrname], b.start - max_size, b.start-1), coords = c(b.start - max_size, b.start-1), strand="+")
 					return(pos)
 				}
 				else {
-					pos <- new("pocketOfSeq", chrname = b.chrname, name = b.name, seq = subseq(sequences[names(sequences) %in% b.chrname], chr.start, b.start))
+					pos <- new("pocketOfSeq", chrname = b.chrname, name = b.name, seq = subseq(sequences[names(sequences) %in% b.chrname], chr.start, b.start-1), coords = c(chr.start, b.start-1), strand = "+")
 					return(pos)
 				}
 			}
 			else {
-				pos <- new("pocketOfSeq", chrname = b.chrname, name = b.name, seq = subseq(sequences[names(sequences) %in% b.chrname], a.end, b.start))
+				pos <- new("pocketOfSeq", chrname = b.chrname, name = b.name, seq = subseq(sequences[names(sequences) %in% b.chrname], a.end, b.start-1), coords = c(a.end, b.start-1), strand = "+")
 				return(pos)
 			}
 		}
 		# IF b.strand != "-"
 		else {
 			if (c.start - b.end > max_size | c.start - b.end < 0) {
-#				print(b.end)
-#				print(c.start)
-#				print(b.end + max_size)
-#				print(chr.end)
 				if (b.end + max_size <= chr.end) {
-				#	print ("Is here")
-					pos <- new("pocketOfSeq", chrname = b.chrname, name = b.name, seq = reverseComplement(subseq(sequences[names(sequences) %in% b.chrname], b.end, b.end + max_size)))
+					pos <- new("pocketOfSeq", chrname = b.chrname, name = b.name, seq = reverseComplement(subseq(sequences[names(sequences) %in% b.chrname], b.end+1, b.end + max_size)), coords = c(b.end+1, b.end + max_size), strand = "-")
 					return(pos)
 				}
 				else {
-					pos <- new("pocketOfSeq", chrname = b.chrname, name = b.name, seq = reverseComplement(subseq(sequences[names(sequences) %in% b.chrname], b.end, chr.end)))
+					pos <- new("pocketOfSeq", chrname = b.chrname, name = b.name, seq = reverseComplement(subseq(sequences[names(sequences) %in% b.chrname], b.end+1, chr.end)), coords = c(b.end+1, chr.end), strand = "-")
 					return(pos)
 				}
 			}
 			else {
 				if (c.start <= chr.end) {
-					pos <- new("pocketOfSeq", chrname = b.chrname, name = b.name, seq = reverseComplement(subseq(sequences[names(sequences) %in% b.chrname], b.end, c.start)))
+					pos <- new("pocketOfSeq", chrname = b.chrname, name = b.name, seq = reverseComplement(subseq(sequences[names(sequences) %in% b.chrname], b.end+1, c.start)), coords = c(b.end+1, c.start), strand = "-")
 					return(pos)
 				}
 				else {
-					pos <- new("pocketOfSeq", chrname = b.chrname, name = b.name, seq = reverseComplement(subseq(sequences[names(sequences) %in% b.chrname], b.end, chr.end)))
+					pos <- new("pocketOfSeq", chrname = b.chrname, name = b.name, seq = reverseComplement(subseq(sequences[names(sequences) %in% b.chrname], b.end+1, chr.end)), coords = c(b.end+1, chr.end), strand = "-")
 					return(pos)
 				}
 			}
@@ -205,7 +255,12 @@ setMethod("show", signature("pocketOfSeq"),
 function(p) {
 	str <- paste(p@name, p@chrname, sep="|")
 	print(str)
+	print("Coordinates")
+	print(p@coords)
+	print("Strand")
+	print(p@strand)
 	print(p@seq)
+	print("------------##  CAT  ##--------------")
 })
 
 

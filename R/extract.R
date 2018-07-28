@@ -32,18 +32,42 @@ library(BSgenome)
 #  * This function returns a GenomicRanges object
 #  */
 get_intergenic_coordinates <- function(gff_file, FaFile, max_size) {
+	print(paste("Extracting ", gff_file, " coordinates from ", FaFile, sep=""))
 	gff <- import.gff(gff_file)
-	gff.mRNA <- gff[gff$type == "mRNA"]
+#	cat("HERE!\n\n\n")
 	info <- seqinfo(scanFaIndex(FaFile))
+	seqlevels(gff) <- seqlevels(info)
+	seqinfo(gff) <- info
+	gff <- trim(gff, use.names=TRUE)
+#	cat("HERE!\n\n\n")
+	gff.mRNA <- gff[gff$type == "mRNA"]
+	seqlevels(gff.mRNA) <- seqlevels(info)
+	seqinfo(gff.mRNA) <- info
+	gff.mRNA <- trim(gff.mRNA, use.names=TRUE)
+#	cat("HERE!\n\n\n")
 	gff.flank <- flank(gff.mRNA, max_size)
+#	cat("HERE!\n\n\n")
 	seqlevels(gff.flank) <- seqlevels(info)
 	seqinfo(gff.flank) <- info
 	gff.flank <- trim(gff.flank, use.names=TRUE)
 	gff.dif <- setdiff(gff.flank, gff.mRNA)
+	seqlevels(gff.dif) <- seqlevels(info)
+	seqinfo(gff.dif) <- info
+	gff.dif <- trim(gff.dif, use.names=TRUE)
 	gff.dif.plus <- gff.dif[strand(gff.dif) == "+"]
 	gff.dif.minus <- gff.dif[strand(gff.dif) == "-"]
+#	cat("HERE!\n\n\n")
 	minus.overlaps <- findOverlaps(flank(gff.dif.minus, 10, start=FALSE), gff.mRNA, select="first")
 	plus.overlaps <- findOverlaps(flank(gff.dif.plus, 10, start=FALSE), gff.mRNA, select="first")
+#	cat("HERE!\n\n\n")
+	if (length(which(plus.overlaps %in% plus.overlaps[is.na(plus.overlaps)])) > 0) {
+		gff.dif.plus <- gff.dif.plus[-which(plus.overlaps %in% plus.overlaps[is.na(plus.overlaps)])]
+		plus.overlaps <- plus.overlaps[!is.na(plus.overlaps)]
+	}
+	if (length(which(minus.overlaps %in% minus.overlaps[is.na(minus.overlaps)])) > 0) {
+		gff.dif.minus <- gff.dif.minus[-which(minus.overlaps %in% minus.overlaps[is.na(minus.overlaps)])]
+		minus.overlaps <- minus.overlaps[!is.na(minus.overlaps)]
+	}
 	gff.dif.plus$Name <- gff.mRNA[plus.overlaps]$Name
 	gff.dif.minus$Name <- gff.mRNA[minus.overlaps]$Name
 	gff.dif <- c(gff.dif.plus, gff.dif.minus)

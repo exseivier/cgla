@@ -26,7 +26,13 @@ ygobTab2gff <- function(ygobTab_file, faFile) {
 	strand <- ifelse(table$V2 == 1, "+", "-")
 	table$V2 <- strand
 	genome <- readDNAStringSet(faFile, format="fasta")
-	table$V6 <- gsub(" .*$", "", names(genome)[table$V6])
+	
+	# TESTING INSECTICIDE for BUG No. 1
+	table$V6 <- unlist(lapply(table$V6, function(x) names(genome[grepl(paste("_", x, "$", sep=""), names(genome))])))
+	
+	# BUG No. 1: 
+	#table$V6 <- gsub(" .*$", "", names(genome)[table$V6])
+	
 	len <- length(table$V6)
 	comments <- paste("Name=", table$V1, ";SHORTNAME=", table$V7, sep="")
 		result <- data.frame(chr=table$V6, source=rep(".", len), type=rep("mRNA", len), start=table$V3, end=table$V4, unk1=rep(".", len), strand=table$V2, phase=rep(".", len), comments=comments)
