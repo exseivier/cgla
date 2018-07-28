@@ -1,4 +1,9 @@
 exportPattern("^[:alnum:]*")
+exportClasses(
+"pocket",
+"pocketOfSeq",
+"listOfPockets"
+)
 exportMethods(
 "get_intergenic_regions"
 )
@@ -6,5 +11,10 @@ export(
 "ygobTab2gff",
 "findMatches",
 "matches2heatmap",
-"write.DNAStringSetList"
+"write.DNAStringSetList",
+"extractPromoters",
+"getGFF",
+"write.gff",
+"write.fasta",
+"collapse.lopos"
 )
